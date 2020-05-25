@@ -1,0 +1,60 @@
+version: '3.7'
+services:
+  shop:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        user: hermes
+        uid: 1000
+    env_file:
+      - ./.env
+    ports:
+      - 9000:9000
+    volumes:
+      - ./docker/php:/usr/local/etc/php/custom.d
+      - ./shop/:/var/www/shop
+    depends_on:
+      - mariadb
+    networks:
+      - hermes
+  mariadb:
+    image: mariadb:10.4.13-bionic
+    environment:
+      MYSQL_ROOT_PASSWORD: DZxh6rM6WU7jzZYU
+      MYSQL_DATABASE: hermes_db
+      MARIADB_USER: hermes
+    volumes:
+      - dbdata:/var/lib/mysql/
+    networks:
+      - hermes
+
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    links:
+      - mariadb
+    networks:
+      - hermes
+
+  nginx:
+    image: nginx:1.17.10-alpine
+    ports:
+      - 8000:80
+    volumes:
+      - ./shop/:/var/www/shop/
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - hermes
+    depends_on:
+      - shop
+      - mariadb
+
+volumes:
+  dbdata:
+    driver: local
+
+networks:
+  hermes:
+    driver: bridge
